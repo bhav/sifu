@@ -1,0 +1,34 @@
+version: '3'
+services:
+  api-server:
+    build:
+      context: api-server/
+    ports:
+      - "3333:3333"
+      - "5005:5005"
+    env_file:
+      - auth0.env
+    environment:
+      - CORS_ALLOWED_HOST=localhost:8080
+    volumes:
+      - ./api-server:/app
+      - /app/.gradle
+      - gradle-cache:/root/.gradle/caches/modules-2/files-2.1/
+    restart: always
+  front-end:
+    build:
+      context: front-end/
+    command: bash -c "envsubst < /app/src/config/template/application.conf.js.template > /app/public/config/application.conf.js && yarn install && yarn serve"
+    ports:
+      - "8080:8080"
+    env_file:
+      - auth0.env
+    environment:
+      - API_URI_BASE=http://localhost:3333
+      - AUTH0_REDIRECT_URI_BASE=http://localhost:8080
+    volumes:
+      - ./front-end:/app
+      - /app/node_modules
+      - /app/public/config
+volumes:
+  gradle-cache:
