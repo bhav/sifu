@@ -1,0 +1,65 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: sifu-api-server-config
+data:
+  CORS_ALLOWED_HOST: frontend:8080
+  AUTH0_DOMAIN: dreweaster.eu.auth0.com
+  AUTH0_CLIENT_ID: RW3cQ2q2b2t4m4ivaPfggqN6O5sfyg1I
+  AUTH0_AUDIENCE: http://my-music-library.com
+  AUTH0_REALM: my_music_library
+  AUTH0_SCOPE: full_access
+  EXIT_ON_PRESSING_ENTER: "false"
+  CLUSTER_TYPE: k8s
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: sifu-api-server-app
+        tier: backend
+    spec:
+      containers:
+      - name: sifu-api-server
+        image: gcr.io/sifu-1/sifu-api-server:v1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        envFrom:
+            - configMapRef:
+                name: sifu-api-server-config
+        env:
+        - name: GET_HOSTS_FROM
+          value: dns
+          # If your cluster config does not include a dns service, then to
+          # instead access environment variables to find service host
+          # info, comment out the 'value: dns' line above, and uncomment the
+          # line below:
+          # value: env
+        ports:
+        - containerPort: 3333
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: sifu-api-server-app
+    tier: frontend
+spec:
+  # if your cluster supports it, uncomment the following to automatically create
+  # an external load-balanced IP for the frontend service.
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3333
+  selector:
+    app: sifu-api-server-app
+    tier: frontend

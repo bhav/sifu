@@ -7,6 +7,8 @@ RUN npm install --quiet --global \
       vue-cli
 
 RUN mkdir /app
+COPY scripts /scripts
+COPY src/config/template /config
 
 COPY package.json /app
 RUN yarn install
